@@ -1,0 +1,362 @@
+/*
+ * Copyright 2023 Harness, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.main {
+  --border-color: var(--grey-200);
+  --line-height: 17.3438px;
+
+  border-radius: 5px;
+  min-height: 36px;
+
+  :global {
+    .d2h-wrapper > div {
+      margin-bottom: 0;
+    }
+
+    .d2h-file-wrapper {
+      border: 0;
+
+      .d2h-diff-tbody {
+        &,
+        tr {
+          position: relative;
+
+          // Use content-visibility to optimize for rendering performance
+          // Ref:
+          //  - https://web.dev/articles/content-visibility
+          //  - https://web.dev/articles/dom-size-and-interactivity
+          &,
+          .d2h-code-line-ctn > * {
+            content-visibility: auto;
+            contain-intrinsic-size: auto var(--line-height);
+          }
+
+          // Reduce pointer events on diff line DOM elements to avoid
+          // browser hit test. When the number of DOM elements is huge,
+          // browsers have to spend too much time on hit test causing unresponsivenss
+          // Ref: https://stackoverflow.com/questions/41830529/optimizing-native-hit-testing-of-dom-elements-chrome
+          .d2h-code-line-ctn {
+            width: auto;
+
+            & > * {
+              pointer-events: none;
+            }
+          }
+
+          &[data-annotated-line] {
+            background-color: var(--white);
+
+            // These cause one or two pixels mismatched
+            // calculation due to table spacing gaps
+            // border-top: 1px solid var(--grey-200);
+            // border-bottom: 1px solid var(--grey-200);
+          }
+
+          &.selected {
+            &.first {
+              border-top: 1px solid var(--border-color);
+            }
+
+            &.last {
+              border-bottom: 1px solid var(--border-color);
+            }
+
+            td {
+              background-color: #e7ffab91 !important;
+            }
+          }
+        }
+
+        tr {
+          &:has(.d2h-del) {
+            background-color: #fee8e9;
+          }
+
+          &:has(.d2h-ins) {
+            background-color: #dfd;
+          }
+
+          &:has(.d2h-emptyplaceholder) {
+            background-color: #f1f1f1;
+          }
+        }
+
+        .d2h-info {
+          background-color: var(--grey-100);
+          color: var(--grey-700);
+          line-height: 24px;
+        }
+
+        .d2h-code-linenumber {
+          cursor: default;
+        }
+      }
+
+      &.side-by-side-file-diff {
+        .d2h-code-side-linenumber.d2h-info {
+          pointer-events: none;
+        }
+      }
+
+      .d2h-code-side-linenumber {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+      }
+
+      [data-annotated='true'] [data-content-for-line-number],
+      [data-content-for-line-number=''],
+      .d2h-emptyplaceholder[data-content-for-line-number=''] {
+        &,
+        :hover {
+          [data-annotation-for-line] {
+            pointer-events: none;
+            display: none;
+          }
+        }
+      }
+
+      .d2h-code-side-line {
+        position: relative;
+        padding: 0;
+      }
+
+      [data-content-for-line-number] {
+        cursor: default;
+        width: 100%;
+        padding-left: 4px;
+        height: 17.3438px !important;
+
+        [data-annotation-for-line] {
+          position: absolute;
+          top: 2px;
+          left: 0;
+          display: flex;
+          height: 14px;
+          width: 14px;
+          font-weight: 600;
+          background: var(--primary-7);
+          color: var(--white);
+          text-align: center;
+          border-radius: 5px;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          visibility: hidden;
+          user-select: none;
+        }
+
+        &:hover [data-annotation-for-line] {
+          visibility: visible;
+
+          &:hover {
+            transform: scale(1.3);
+            transition: transform 0.75s;
+          }
+        }
+      }
+
+      &.line-by-line-file-diff {
+        [data-annotation-for-line] {
+          left: 102px;
+        }
+      }
+    }
+
+    .d2h-file-header {
+      display: none;
+    }
+
+    .d2h-files-diff {
+      .d2h-code-side-linenumber {
+        border-left: 0;
+      }
+    }
+
+    .d2h-file-side-diff {
+      border-bottom-left-radius: 5px;
+      border-bottom-right-radius: 5px;
+    }
+
+    .d2h-code-side-linenumber {
+      width: 64px;
+    }
+  }
+
+  &.readOnly {
+    :global {
+      .d2h-file-wrapper {
+        [data-content-for-line-number] {
+          cursor: default;
+
+          [data-annotation-for-line] {
+            display: none !important;
+          }
+        }
+      }
+    }
+  }
+
+  &.collapsed {
+    .diffHeader {
+      border-bottom-left-radius: 5px;
+      border-bottom-right-radius: 5px;
+    }
+
+    .diffContent {
+      display: none;
+    }
+  }
+
+  .diffHeader {
+    display: grid;
+    align-items: center;
+    background-color: var(--white);
+    position: sticky;
+    top: var(--diff-viewer-sticky-top, 0);
+    z-index: 1;
+    padding: 5px 10px 5px 5px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    box-shadow: 0px 2px 4px 0px rgba(96, 97, 112, 0.16), 0px 0px 1px 0px rgba(40, 41, 61, 0.04);
+    z-index: 4;
+
+    .fnamePopover {
+      display: flex;
+    }
+
+    .chevron {
+      align-self: center;
+      height: 24px;
+      width: 24px;
+    }
+
+    .fname {
+      align-self: center;
+      align-items: center;
+      text-align: left;
+      max-width: calc(100vw - 600px);
+
+      a {
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 20px;
+        text-align: center;
+
+        color: var(--grey-700);
+
+        &:hover {
+          color: var(--primary-7) !important;
+        }
+      }
+    }
+
+    .addedLines {
+      align-self: center;
+      min-width: 36px;
+      height: 18px;
+      background: var(--green-50);
+      border-radius: 2px;
+      padding: 0px 8px 0px 8px;
+
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 18px;
+      text-align: center;
+      color: var(--green-800);
+    }
+
+    .deletedLines {
+      align-self: center;
+      min-width: 36px;
+      height: 18px;
+      background: var(--red-50);
+      border-radius: 2px;
+      padding: 0px 8px 0px 8px;
+
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 18px;
+      text-align: center;
+      color: var(--red-800);
+    }
+
+    .fileChanged {
+      align-self: center;
+      height: 28px;
+      width: 184px;
+      background: var(--orange-50);
+      border-radius: 4px;
+
+      margin-top: 2px;
+      margin-right: 8px;
+
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 28px;
+      text-align: center;
+      color: var(--orange-500);
+    }
+
+    .viewLabel {
+      display: flex;
+      background: var(--grey-100);
+      height: 28px;
+      width: 82px;
+      padding-left: 8px;
+      align-items: center;
+
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 28px;
+      border-radius: 4px;
+      text-align: center;
+      color: var(--black);
+
+      margin-top: 2px;
+
+      // avoid text being selected when user presses button twice
+      user-select: none;
+      cursor: pointer;
+
+      input {
+        display: inline-block;
+        margin-right: var(--spacing-small);
+      }
+    }
+  }
+
+  .diffContent {
+    box-shadow: 0px 2px 4px 0px rgba(96, 97, 112, 0.16), 0px 0px 1px 0px rgba(40, 41, 61, 0.04);
+    z-index: 3;
+
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    max-width: calc(var(--page-container-width) - 48px);
+  }
+}
+
+.popover {
+  :global {
+    .bp3-popover-content {
+      padding: var(--spacing-medium);
+      max-width: 700px;
+      word-break: break-all;
+    }
+  }
+}
+
+// TODO: Restyle DiffView to match latest design (https://www.figma.com/file/PgBvi804VdQNyLS8fD9K0p/Code?node-id=9391%3A118114&mode=dev)
